@@ -13,7 +13,8 @@ td { padding: 12px }
 	  <td>{{ r.entity_id }}</td>
 	  <td>{{ r.entity_class }}</td>
 	  <td>{{ r.map_category }}</td>
-	  <td>{{ (r.entity_data || {}).title }}</td>
+	  <td>{{ (r.entity_data || {}).label }}</td>
+	  <td><img v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture"></td>
 	</tr>
       </tbody>
     </table>
@@ -60,27 +61,31 @@ module.exports = {
 			axios.get('/entity/' + i.entity_id)
 			    .then(d => {
 				i.entity_data = d.data;
+				if (!(k % 10)) {
+				    c.update = Math.random()
+				    Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
+				}
 			    })
 			    .catch(e => console.log(e))
 		    }
 		});
 	    c.update = c.update;
 	},
+	observerCallback: function(entries, observer){
+	    var c = this;
+            if (entries.filter(entry => entry.isIntersecting).length) {
+		c.lastItem = c.lastItem + 20;
+		console.log('loading ' + c.lastItem)
+		c.loadEntities()
+		Vue.nextTick(function () {
+			observer.observe(document.querySelector('.last'))
+		})
+            }
+	},
 	startLazyLoader: function(){
 	    var c = this;
             let options = { rootMargin: '160px', threshold: 0 }
-	    var observer;
-            let callback = (entries, observer) => {
-                if (entries.filter(entry => entry.isIntersecting).length) {
-		    c.lastItem = c.lastItem + 20;
-		    console.log('loading ' + c.lastItem)
-		    c.loadEntities()
-		    Vue.nextTick(function () {
-			observer.observe(document.querySelector('.last'))
-		    })
-                }
-            };
-            observer = new IntersectionObserver(callback, options);
+            var observer = new IntersectionObserver(c.observerCallback, options);
             observer.observe(document.querySelector('.last'))
 	    c.observer = observer;
 	},
