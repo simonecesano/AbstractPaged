@@ -114,6 +114,13 @@ module.exports = {
 			// axios.get('https://www.wikidata.org/wiki/Special:EntityData/' + i.entity_id + '.json')
 			axios.get('/entity/' + i.entity_id)
 			    .then(d => {
+				if(d.data.picture) {
+				    var img = new Image;
+				    img.onload = function(){
+					console.log('loaded',this);
+				    }
+				    img.src = d.data.picture
+				}
 				i.entity_data = d.data;
 				if (!(k % 10)) {
 				    c.update = Math.random()
