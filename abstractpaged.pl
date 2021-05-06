@@ -27,9 +27,17 @@ get '/entity/:id' => sub {
 	       })
 };
 
+get '/components' => sub {
+    my $c = shift;
+    # ->to_rel('./public')
+    # ->map(sub { shift()->stat->mtime })
+    my $components = path('.')->list_tree->grep(sub { /vue$/ })->map(sub { shift() })->to_array;
+    $c->stash('components', $components);
+    $c->render(template => 'components');
+};
+
 app->start;
 __DATA__
-
 @@ index.html.ep
 % layout 'default';
 % title 'Welcome';
@@ -37,6 +45,15 @@ __DATA__
   <router-view>
   </router-view>
 </div>
+@@ components.html.ep
+<table style="font-family: Courier">
+  <tbody>
+    % for (sort { $b->stat->mtime <=> $a->stat->mtime } @$components) {
+    <tr><td><a href="<%= $_->to_rel('./public') %>"><%= $_->to_rel('./public') %></a></td><td><%= $_->stat->mtime %></td></tr>
+    % }
+    <tr>
+  </tbody>
+</table>
 @@ layouts/default.html.ep
 <!DOCTYPE html>
 <html>
