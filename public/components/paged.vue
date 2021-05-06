@@ -6,13 +6,9 @@ tr:nth-child(odd) { background-color: #dddddd; }
 /* tr, tr * { opacity: 0 } */
 td { padding: 12px }
 
-table { table-layout: fixed; }
-td:nth-child(0) { column-width: 4em;  }
-td:nth-child(2) { column-width: 4em;  }
-td:nth-child(3) { column-width: 4em;  }
-td:nth-child(4) { column-width: 12em;  }
-td:nth-child(4) { column-width: 24em;  }
-td:nth-child(5) { column-width: 8em;  }
+table { table-layout: fixed; width: 32em }
+td:nth-child(0) { column-width: 24em;  }
+td:nth-child(1) { column-width: 8em;  }
 </style>
 <template>
   <div>
@@ -21,19 +17,12 @@ td:nth-child(5) { column-width: 8em;  }
     <div @click="nextPage">next</div>
     <div @click="prevPage">prev</div>
     <table>
-      <col style="width:4em">
-      <col style="width:4em">
-      <col style="width:12em">
       <col style="width:64em">
       <col style="width:8em">
       <tbody :key="update">
-	<tr :data-idx="r.idx" :class="(i + 1) == lastItem ? 'last' : undefined" v-for="(r, i) in items.slice(minRow, maxRow + 1)">
-	  <td>{{ r.idx }}</td>
-	  <td>{{ r.entity_class }}</td>
-	  <td>{{ r.map_category }}</td>
-	  <td>{{ (r.entity_data || {}).label }}</td>
-	  <td><img v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture"></td>
-	</tr>
+	<item v-for="(r, i) in items.slice(minRow, maxRow + 1)"
+	      :data-idx="r.idx" :class="(i + 1) == lastItem ? 'last' : undefined"
+	      :key="r.idx" :entity_id="r.entity_id"></item>
       </tbody>
     </table>
   </div>
@@ -61,12 +50,15 @@ module.exports = {
 		c.items = d.data.value.map((p, i) => { p.idx = i; return p });
 		console.log(JSON.stringify(c.items[0]));
 
-		c.loadEntities()
+		// c.loadEntities()
 	    })
 	    .catch(e => console.log(e))
 	setInterval(function(){
 	    c.getScrollTops()
 	}, 300);
+    },
+    components: {
+        item: httpVueLoader('components/item.vue'),
     },
     destroyed: function(){
 
@@ -116,9 +108,7 @@ module.exports = {
 			    .then(d => {
 				if(d.data.picture) {
 				    var img = new Image;
-				    img.onload = function(){
-					console.log('loaded',this);
-				    }
+				    img.onload = function(){ console.log('loaded', this) }
 				    img.src = d.data.picture
 				}
 				i.entity_data = d.data;
