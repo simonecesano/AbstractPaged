@@ -48,7 +48,11 @@ __DATA__
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/http-vue-loader@1.4.1/src/httpVueLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue-router@3.1.5/dist/vue-router.js"></script>
-  </head>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsonpath-plus@5.0.7/dist/index-browser-umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.0/spark-md5.min.js"
+	    integrity="sha512-5Cmi5XQym+beE9VUPBgqQnDiUhiY8iJU+uCUbZIdWFmDNI+9u3A7ntfO8fRkigdZCRrbM+DSpSHSXAuOn5Ajbg==" crossorigin="anonymous"></script>    
+    </head>
   <body><%= content %></body>
   <script type="module" src="/app.js"></script>
 </html>
