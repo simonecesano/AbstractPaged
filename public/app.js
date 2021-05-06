@@ -4,6 +4,7 @@ var app = new Vue({
 	routes: [
 	    { path: '/',        component: httpVueLoader('components/index.vue') },
 	    { path: '/page/:p', component: httpVueLoader('components/paged.vue') },
+	    { path: '/lazy',    component: httpVueLoader('components/lazyload.vue') },
 	    { path: '/many',    component: httpVueLoader('components/many.vue') },
     	],
     })),
