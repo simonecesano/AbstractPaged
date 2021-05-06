@@ -9,8 +9,6 @@ td { padding: 12px }
     <table>
       <tbody :key="update">
 	<tr :class="(i + 1) == lastItem ? 'last' : undefined" v-for="(r, i) in items.slice(0, lastItem)">
-	  <td>{{ i }}</td>
-	  <td>{{ r.entity_id }}</td>
 	  <td>{{ r.entity_class }}</td>
 	  <td>{{ r.map_category }}</td>
 	  <td>{{ (r.entity_data || {}).label }}</td>
