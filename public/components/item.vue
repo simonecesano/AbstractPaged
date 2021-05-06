@@ -1,7 +1,8 @@
 <style scoped>
 </style>
 <template>
-  <tr><td>{{ item.label }}</td><td><img v-if="item && item.picture" :src="item.picture"></td></tr>
+  <tr v-if="done"><td>{{ item.label }}</td><td><img v-if="item && item.picture" :src="item.picture"></td></tr>
+  <tr v-else><td></td><td></td></tr>
 </div>
 </template>
 <script>
@@ -9,6 +10,7 @@ module.exports = {
     props: ['entity_id', 'lang'],
     data: function () {
 	return {
+	    done: false,
 	    item: {}
 	};
     },
@@ -24,7 +26,7 @@ module.exports = {
 		var labels = lang.map(l => { return entity.labels[l] }).filter(l => l).map(l => l.value);
 		var links  = lang.map(l => { return entity.sitelinks[l + 'wiki'] }).filter(l => l).map(l => l.url);
 		var picture; try { picture = entity.claims.P18[0].mainsnak.datavalue.value } catch(e){};
-
+		c.done = true;
 		c.item = { label: (labels ||[])[0], link: (links || [])[0], picture: picture ? c.imgUrl(picture, 100) : false };
 	    })
 	    .catch(e => console.log(e))
