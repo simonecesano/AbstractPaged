@@ -1,21 +1,38 @@
 <style scoped>
 * { font-family: Courier }
-tr                { background-color: #aaaaaa }
-tr:nth-child(odd) { background-color: #dddddd; }
-td { padding: 12px }
+
+div.row                { background-color: #aaaaaa }
+div.row:nth-child(odd) { background-color: #dddddd }
+div.cell { padding: 12px }
+
+div.cell  { display: table-cell; border: none; vertical-align: top; margin-top: auto }
+
+div.group  { display: table-cell;  border: none; vertical-align:top; }
+
+div.row   { display: table-row; border: none;  }
+div.table { display: table }
+div.tbody { display: table-row-group }
+
+div.label { width: 24em }
+div.pictire { width: 240px }
+
 </style>
 <template>
   <div>
-    <table>
-      <tbody :key="update">
-	<tr :class="(i + 1) == lastItem ? 'last' : undefined" v-for="(r, i) in items.slice(0, lastItem)">
-	  <td>{{ r.entity_class }}</td>
-	  <td>{{ r.map_category }}</td>
-	  <td>{{ (r.entity_data || {}).label }}</td>
-	  <td><img v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture"></td>
-	</tr>
-      </tbody>
-    </table>
+    <div class="table">
+      <div class="tbody">
+	<div :key="r.idx" :class="['row', (i + 1) == lastItem ? 'last' : undefined]" v-for="(r, i) in items.slice(0, lastItem)">
+	  <div class="group">
+	    <div class="cell eclass">{{ r.entity_class }}</div>
+	    <div class="cell mapcat">{{ r.map_category }}</div>
+	  </div>
+	  <div class="group">
+	    <div class="cell label">{{ (r.entity_data || {}).label }}</div>
+	    <div class="cell picture"><img @error="imgError($event, r)" v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture"></div>
+	  </div>
+	</div>
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -36,7 +53,7 @@ module.exports = {
 
 	axios.get('/items')
 	    .then(d => {
-		console.log(JSON.stringify(d.data.value[0]));
+		console.log(JSON.stringify(d.data.value.slice(0, 10)));
 		c.items = d.data.value;
 
 		Vue.nextTick(function () {
@@ -50,15 +67,43 @@ module.exports = {
 
     },
     methods: {
+	imgError: function(e, r){
+	    var c = this;
+	    c.items.forEach(i => {
+		if (i.entity_data && i.entity_data.picture == e.originalTarget.src) {
+		    console.log(e.originalTarget.src, r.picture, i.entity_data.picture);
+		    i.entity_data.picture = null
+		}
+	    })
+	    r.picture = null;
+	},
+	preloadImage: function(src){
+	    var c = this;
+	    var img = new Image;
+	    function markError(src){
+		c.items.forEach(i => {
+		    if (i.entity_data && i.entity_data.picture == src) {
+			i.entity_data.picture = null
+		    }
+		})
+	    }
+	    
+	    img.onerror = function(e) {
+		markError(e.target.src);
+	    }
+	    img.onload  = function() {  }
+	    img.src = src;
+	},
 	loadEntities: function(){
 	    var c = this;
 	    c.items.slice(0, c.lastItem)
 		.forEach((i, k) => {
+		    var tot;
 		    if (!i.entity_data) {
-			// axios.get('https://www.wikidata.org/wiki/Special:EntityData/' + i.entity_id + '.json')
 			axios.get('/entity/' + i.entity_id)
 			    .then(d => {
 				i.entity_data = d.data;
+				if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
 				if (!(k % 10)) {
 				    c.update = Math.random()
 				    Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
@@ -67,22 +112,22 @@ module.exports = {
 			    .catch(e => console.log(e))
 		    }
 		});
-	    c.update = c.update;
 	},
 	observerCallback: function(entries, observer){
 	    var c = this;
             if (entries.filter(entry => entry.isIntersecting).length) {
-		c.lastItem = c.lastItem + 20;
+		c.lastItem = c.lastItem + 40;
 		console.log('loading ' + c.lastItem)
-		c.loadEntities()
+		c.loadEntities();
 		Vue.nextTick(function () {
-			observer.observe(document.querySelector('.last'))
+		    observer.observe(document.querySelector('.last'))
 		})
             }
 	},
 	startLazyLoader: function(){
 	    var c = this;
-            let options = { rootMargin: '160px', threshold: 0 }
+	    var screenHeight = window.screen.height + 'px';
+            let options = { rootMargin: screenHeight, threshold: 0 }
             var observer = new IntersectionObserver(c.observerCallback, options);
             observer.observe(document.querySelector('.last'))
 	    c.observer = observer;
