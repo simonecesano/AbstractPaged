@@ -3,7 +3,7 @@
 <template>
   <div>
     <table>
-      <item v-for="r in items" _key="r" :entity_id="r"></item>
+      <item v-for="r in items" :key="r" :entity_id="r"></item>
     </table>
   </div>
 </template>
