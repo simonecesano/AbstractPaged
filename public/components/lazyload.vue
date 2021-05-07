@@ -26,6 +26,7 @@ div.pictire { width: 240px }
 	    <div class="cell eclass">{{ r.entity_class }}</div>
 	    <div class="cell mapcat">{{ r.map_category }}</div>
 	  </div>
+	  <item :entity_id="r.entity_id"></item>
 	  <div class="group">
 	    <div class="cell label">{{ (r.entity_data || {}).label }}</div>
 	    <div class="cell picture"><img @error="imgError($event, r)" v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture"></div>
@@ -62,6 +63,9 @@ module.exports = {
 		c.loadEntities()
 	    })
 	    .catch(e => console.log(e))
+    },
+    components: {
+        item: httpVueLoader('components/base/item.vue'),
     },
     destroyed: function(){
 
