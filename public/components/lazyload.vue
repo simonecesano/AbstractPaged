@@ -40,7 +40,9 @@ div.tbody { display: table-row-group }
 	<div :key="r.idx" :data-idx="r.idx" :class="['row', isLastItem(r) ? 'last' : undefined]" v-for="(r, i) in items.slice(firstItem, lastItem)">
 	  <div class="group">
 	    <div class="cell eclass">{{ r.entity_class }}</div>
-	    <div class="cell mapcat"><img :src="`/icons/${r.map_category.replace(/ /g, '_')}.png`"></div>
+	    <div class="cell mapcat">
+	      <icon :key="r.map_category + r.entity_class" :icon="r.map_category.replace(/ /g, '_')" :color="r.entity_class" />
+	    </div>
 	  </div>
 	  <div class="group">
 	    <div class="cell label">{{ (r.entity_data || {}).label }}</div>
@@ -68,7 +70,13 @@ module.exports = {
 	var c = this;
 	axios.get('/items')
 	    .then(d => {
-		c.items = d.data.value.slice(0, 128000).map((p, i) => { p.idx = i; return p });
+		c.items = d.data.value
+		    // .slice(0, 12)
+		    .map((p, i) => {
+			p.idx = i;
+			p.entity_class = ['A', 'B', 'C'][Math.floor(Math.random() * 3)];
+			return p
+		    });
 		Vue.nextTick(function () { c.startLazyLoader() })
 		c.loadEntities()
 	    })
@@ -76,6 +84,7 @@ module.exports = {
     },
     components: {
         item: httpVueLoader('components/base/item.vue'),
+        icon: httpVueLoader('components/base/icon.vue'),
     },
     destroyed: function(){
 
