@@ -67,7 +67,7 @@ module.exports = {
 	axios.get('/items')
 	    .then(d => {
 		c.items = d.data.value
-		    .slice(0, 32)
+		    /* .slice(0, 32) */
 		    .map((p, i) => {
 			p.idx = i;
 			p.entity_class = ['A', 'B', 'C'][Math.floor(Math.random() * 3)];
