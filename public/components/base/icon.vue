@@ -16,7 +16,7 @@ module.exports = {
     props: ['icon', 'color'],
     data: function () {
 	return {
-	    colors: { 'A': '#ffffd4', 'B': '#fe9929', 'C': '#993404' }
+	    colors: { 'C': '#ffffd4', 'B': '#fe9929', 'A': '#993404' }
 	};
     },
     methods: {
