@@ -40,7 +40,7 @@ div.tbody { display: table-row-group }
 	<div :key="r.idx" :data-idx="r.idx" :class="['row', isLastItem(r) ? 'last' : undefined]" v-for="(r, i) in items.slice(firstItem, lastItem)">
 	  <div class="group">
 	    <div class="cell eclass">{{ r.entity_class }}</div>
-	    <div class="cell mapcat">{{ r.map_category }}</div>
+	    <div class="cell mapcat"><img :src="`/icons/${r.map_category.replace(/ /g, '_')}.png`"></div>
 	  </div>
 	  <div class="group">
 	    <div class="cell label">{{ (r.entity_data || {}).label }}</div>
