@@ -6,23 +6,20 @@ div.row:nth-child(odd) { background-color: #dddddd }
 
 div.cell { padding: 12px }
 
-
-
-
-
 div.row   { display: table-row; border: none;  }
 div.table { display: table; }
 div.tbody { display: table-row-group }
 
 @media screen and (max-width: 575.98px) {
-    div.group  { display: table-row;  border: none; vertical-align:top }
-    div.label   { width: 12em }
-    div.picture { width: 100px; }
-    div.picture img { margin-top: -40px }
+    div.group  { display: table-cell;  border: none; vertical-align:top }
+    div.label   { width: 10em }
+    div.label.nopic   { width: 18em }
 
     div.cell  { display: inline-block; vertical-align: top; margin-top: auto }
 
-    /* .cell { color: red; border: thin solid white } */
+    div.picture.cell     { width: 100px; display: inline-block }
+    div.picture.cell img { margin-top: 0 }
+    div.picture.cell.nopic { width: 0px; display: none }
 }
 
 @media screen and (min-width: 576px) {
@@ -39,14 +36,13 @@ div.tbody { display: table-row-group }
       <div class="tbody" :key="update">
 	<div :key="r.idx" :data-idx="r.idx" :class="['row', isLastItem(r) ? 'last' : undefined]" v-for="(r, i) in items.slice(firstItem, lastItem)">
 	  <div class="group">
-	    <div class="cell eclass">{{ r.entity_class }}</div>
 	    <div class="cell mapcat">
 	      <icon :key="r.map_category + r.entity_class" :icon="r.map_category.replace(/ /g, '_')" :color="r.entity_class" />
 	    </div>
-	  </div>
-	  <div class="group">
-	    <div class="cell label">{{ (r.entity_data || {}).label }}</div>
-	    <div class="cell picture"><img @error="imgError($event, r)" v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture"></div>
+	    <div :class="['cell', 'label', r.entity_data && r.entity_data.picture ? undefined : 'nopic']">{{ (r.entity_data || {}).label }}</div>
+	    <div :class="['cell', 'picture', r.entity_data && r.entity_data.picture ? undefined : 'nopic']">
+	      <img @error="imgError($event, r)" v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture">
+	    </div>
 	  </div>
 	</div>
       </div>
@@ -71,7 +67,7 @@ module.exports = {
 	axios.get('/items')
 	    .then(d => {
 		c.items = d.data.value
-		    // .slice(0, 12)
+		    .slice(0, 32)
 		    .map((p, i) => {
 			p.idx = i;
 			p.entity_class = ['A', 'B', 'C'][Math.floor(Math.random() * 3)];
