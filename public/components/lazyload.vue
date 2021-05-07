@@ -3,18 +3,34 @@
 
 div.row                { background-color: #aaaaaa }
 div.row:nth-child(odd) { background-color: #dddddd }
+
 div.cell { padding: 12px }
 
-div.cell  { display: table-cell; border: none; vertical-align: top; margin-top: auto }
 
-div.group  { display: table-cell;  border: none; vertical-align:top; }
+
+
 
 div.row   { display: table-row; border: none;  }
-div.table { display: table }
+div.table { display: table; }
 div.tbody { display: table-row-group }
 
-div.label   { width: 24em }
-div.picture { width: 120px }
+@media screen and (max-width: 575.98px) {
+    div.group  { display: table-row;  border: none; vertical-align:top }
+    div.label   { width: 12em }
+    div.picture { width: 100px; }
+    div.picture img { margin-top: -40px }
+
+    div.cell  { display: inline-block; vertical-align: top; margin-top: auto }
+
+    /* .cell { color: red; border: thin solid white } */
+}
+
+@media screen and (min-width: 576px) {
+    div.cell  { display: table-cell; vertical-align: top; margin-top: auto } 
+    div.group  { display: table-cell;  border: none; vertical-align:top }
+    div.label   { width: 24em }
+    div.picture { width: 120px }
+}
 
 </style>
 <template>
@@ -23,7 +39,6 @@ div.picture { width: 120px }
       <div class="tbody" :key="update">
 	<div :key="r.idx" :data-idx="r.idx" :class="['row', isLastItem(r) ? 'last' : undefined]" v-for="(r, i) in items.slice(firstItem, lastItem)">
 	  <div class="group">
-	    <div class="cell">{{ r.idx + 1  }}</div>
 	    <div class="cell eclass">{{ r.entity_class }}</div>
 	    <div class="cell mapcat">{{ r.map_category }}</div>
 	  </div>
@@ -53,7 +68,7 @@ module.exports = {
 	var c = this;
 	axios.get('/items')
 	    .then(d => {
-		c.items = d.data.value.map((p, i) => { p.idx = i; return p });
+		c.items = d.data.value.slice(0, 128000).map((p, i) => { p.idx = i; return p });
 		Vue.nextTick(function () { c.startLazyLoader() })
 		c.loadEntities()
 	    })
@@ -161,7 +176,7 @@ module.exports = {
 	observerCallback: function(entries, observer){
 	    var c = this;
             if (entries.filter(entry => entry.isIntersecting).length) {
-		if (c.lastItem < c.items.length) {
+		if (c.lastItem <= c.items.length) {
 		    c.lastItem = c.lastItem + 128;
 		    c.loadEntities();
 		    Vue.nextTick(function () {
