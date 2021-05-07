@@ -21,7 +21,7 @@ module.exports = {
     methods: {
     },
     components: {
-        item: httpVueLoader('components/item.vue'),
+        item: httpVueLoader('components/base/item.vue'),
     },
 }
 </script>
