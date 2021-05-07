@@ -20,7 +20,7 @@ div.pictire { width: 240px }
 <template>
   <div>
     <div class="table">
-      <div class="tbody">
+      <div class="tbody" :key="update">
 	<div :key="r.idx" :class="['row', (i + 1) == lastItem ? 'last' : undefined]" v-for="(r, i) in items.slice(0, lastItem)">
 	  <div class="group">
 	    <div class="cell eclass">{{ r.entity_class }}</div>
@@ -53,7 +53,7 @@ module.exports = {
 
 	axios.get('/items')
 	    .then(d => {
-		console.log(JSON.stringify(d.data.value.slice(0, 10)));
+		// console.log(JSON.stringify(d.data.value.slice(0, 10)));
 		c.items = d.data.value;
 
 		Vue.nextTick(function () {
@@ -116,7 +116,7 @@ module.exports = {
 	observerCallback: function(entries, observer){
 	    var c = this;
             if (entries.filter(entry => entry.isIntersecting).length) {
-		c.lastItem = c.lastItem + 40;
+		c.lastItem = c.lastItem + 80;
 		console.log('loading ' + c.lastItem)
 		c.loadEntities();
 		Vue.nextTick(function () {
