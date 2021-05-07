@@ -21,9 +21,9 @@ div.picture { width: 120px }
   <div>
     <div class="table">
       <div class="tbody" :key="update">
-	<div :key="r.idx" :class="['row', (i + 1) == lastItem ? 'last' : undefined]" v-for="(r, i) in items.slice(0, lastItem)">
+	<div :key="r.idx" :data-idx="r.idx" :class="['row', isLastItem(r) ? 'last' : undefined]" v-for="(r, i) in items.slice(firstItem, lastItem)">
 	  <div class="group">
-	    <div class="cell">{{ i + 1 }}</div>
+	    <div class="cell">{{ r.idx + 1  }}</div>
 	    <div class="cell eclass">{{ r.entity_class }}</div>
 	    <div class="cell mapcat">{{ r.map_category }}</div>
 	  </div>
@@ -41,25 +41,20 @@ module.exports = {
     data: function () {
 	return {
 	    items:   [ ],
-	    lastItem: 40,
+	    firstItem: 0,
+	    lastItem: 128,
 	    update: 0,
 	    observer: undefined,
+	    minRow: 0,
+	    maxRow: undefined,
 	};
     },
     mounted: function(){
 	var c = this;
-	axios.get('https://www.wikidata.org/wiki/Special:EntityData/Q28937423.json')
-	    .then(d => console.log(d.data))
-	    .catch(e => console.log(e))
-
 	axios.get('/items')
 	    .then(d => {
-		// console.log(JSON.stringify(d.data.value.slice(0, 10)));
-		c.items = d.data.value;
-
-		Vue.nextTick(function () {
-		    c.startLazyLoader();
-		})
+		c.items = d.data.value.map((p, i) => { p.idx = i; return p });
+		Vue.nextTick(function () { c.startLazyLoader() })
 		c.loadEntities()
 	    })
 	    .catch(e => console.log(e))
@@ -71,6 +66,9 @@ module.exports = {
 
     },
     methods: {
+	isLastItem: function(item){
+	    return (item.idx + 1) == this.lastItem || (item.idx + 1) == this.items.length;
+	},
 	imgError: function(e, r){
 	    var c = this;
 	    c.items.forEach(i => {
@@ -108,6 +106,24 @@ module.exports = {
 	    ;
 	    return url
 	},
+	isInViewport: function(element) {
+	    const rect = element.getBoundingClientRect();
+	    return (
+		rect.top >= 0 &&
+		    rect.left >= 0 &&
+		    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+		    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+	    );
+	},
+	getScrollTops: function(){
+	    var c = this;
+	    var rows = Array.from(document.querySelectorAll('.row'))
+		.map((row, i) => [ i, c.isInViewport(row), row.dataset.idx ])
+	    console.log(rows);
+	    c.minRow = Math.min(...rows.filter(r => r[1]).map(r => r[2]));
+	    c.maxRow = Math.max(...rows.filter(r => r[1]).map(r => r[2]));
+	    return [ c.minRow, c.maxRow ];
+	},
 	getEntityFromWikidata: function(entity_id, langs, pictureSize){
 	    var c = this;
 	    var url = 'https://www.wikidata.org/wiki/Special:EntityData/' + entity_id + '.json';
@@ -124,50 +140,44 @@ module.exports = {
 	},
 	loadEntities: function(){
 	    var c = this;
-	    console.log(c.$route.query.wd);
-	    c.items.slice(0, c.lastItem)
+	    var l = 0;
+	    
+	    c.items.slice(c.firstItem, c.lastItem)
 		.forEach((i, k) => {
 		    if (!i.entity_data) {
-			if (!c.$route.query.wd) {
-			    axios.get('/entity/' + i.entity_id)
-				.then(d => {
-				    i.entity_data = d.data;
-				    if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
-				    if (!(k % 10)) {
-					c.update = Math.random()
-					Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
-				    }
-				})
-				.catch(e => console.log(e))
-			} else {
-			    c.getEntityFromWikidata(i.entity_id)
-				.then(d => {
-				    i.entity_data = d;
-				    if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
-				    if (!(k % 10)) {
-					c.update = Math.random()
-					Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
-				    }
-				})
-			        .catch(e => console.log(e))
-			}
+			axios.get('/entity/' + i.entity_id)
+			    .then(d => {
+				i.entity_data = d.data;
+				if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
+				if (!(l++ % 16)) {
+				    c.update = Math.random()
+				    Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
+				}
+			    })
+			    .catch(e => console.log(e))
 		    }
 		});
 	},
 	observerCallback: function(entries, observer){
 	    var c = this;
             if (entries.filter(entry => entry.isIntersecting).length) {
-		c.lastItem = c.lastItem + 80;
-		console.log('loading ' + c.lastItem)
-		c.loadEntities();
-		Vue.nextTick(function () {
-		    observer.observe(document.querySelector('.last'))
-		})
+		if (c.lastItem < c.items.length) {
+		    c.lastItem = c.lastItem + 128;
+		    c.loadEntities();
+		    Vue.nextTick(function () {
+			observer.observe(document.querySelector('.last'))
+		    })
+		} else {
+		    c.loadEntities();
+		    Vue.nextTick(function () {
+			observer.observe(document.querySelector('.last'))
+		    })
+		}
             }
 	},
 	startLazyLoader: function(){
 	    var c = this;
-	    var screenHeight = window.screen.height + 'px';
+	    var screenHeight = 2 * window.screen.height + 'px';
             let options = { rootMargin: screenHeight, threshold: 0 }
             var observer = new IntersectionObserver(c.observerCallback, options);
             observer.observe(document.querySelector('.last'))
