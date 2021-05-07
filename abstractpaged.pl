@@ -6,6 +6,7 @@ use Mojo::JSON qw/decode_json/;
 app->types->type(vue => 'text/plain');
 
 plugin 'Config';
+plugin Config => { file => 'icons.conf' };
 
 get '/' => sub ($c) {
   $c->render(template => 'index');
@@ -34,6 +35,16 @@ get '/components' => sub {
     my $components = path('.')->list_tree->grep(sub { /vue$/ })->map(sub { shift() })->to_array;
     $c->stash('components', $components);
     $c->render(template => 'components');
+};
+
+get '/icons/:map_category' => [format => ['png'] ] => sub {
+    my $c = shift;
+    $c->redirect_to('/icons/' . $c->config->{icons}->{$c->stash('map_category') } . '.png');
+};
+
+get '/icons/:map_category' => [format => ['json'] ] => sub {
+    my $c = shift;
+    $c->render(json => $c->config->{icons})
 };
 
 app->start;
