@@ -39,6 +39,7 @@ get '/components' => sub {
 
 get '/icons/:map_category' => [format => ['png'] ] => sub {
     my $c = shift;
+    $c->res->code(301);
     $c->redirect_to('/icons/' . $c->config->{icons}->{$c->stash('map_category') } . '.png');
 };
 
