@@ -124,29 +124,33 @@ module.exports = {
 	},
 	loadEntities: function(){
 	    var c = this;
+	    console.log(c.$route.query.wd);
 	    c.items.slice(0, c.lastItem)
 		.forEach((i, k) => {
 		    if (!i.entity_data) {
-			axios.get('/entity/' + i.entity_id)
-			    .then(d => {
-				i.entity_data = d.data;
-				if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
-				if (!(k % 10)) {
-				    c.update = Math.random()
-				    Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
-				}
-			    })
-			    .catch(e => console.log(e))
-			// c.getEntityFromWikidata(i.entity_id)
-			//     .then(d => {
-			// 	i.entity_data = d;
-			// 	if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
-			// 	if (!(k % 10)) {
-			// 	    c.update = Math.random()
-			// 	    Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
-			// 	}
-			//     })
-			//     .catch(e => console.log(e))
+			if (!c.$route.query.wd) {
+			    axios.get('/entity/' + i.entity_id)
+				.then(d => {
+				    i.entity_data = d.data;
+				    if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
+				    if (!(k % 10)) {
+					c.update = Math.random()
+					Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
+				    }
+				})
+				.catch(e => console.log(e))
+			} else {
+			    c.getEntityFromWikidata(i.entity_id)
+				.then(d => {
+				    i.entity_data = d;
+				    if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
+				    if (!(k % 10)) {
+					c.update = Math.random()
+					Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
+				    }
+				})
+			        .catch(e => console.log(e))
+			}
 		    }
 		});
 	},
