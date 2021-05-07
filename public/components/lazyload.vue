@@ -13,8 +13,8 @@ div.row   { display: table-row; border: none;  }
 div.table { display: table }
 div.tbody { display: table-row-group }
 
-div.label { width: 24em }
-div.pictire { width: 240px }
+div.label   { width: 24em }
+div.picture { width: 120px }
 
 </style>
 <template>
@@ -23,10 +23,10 @@ div.pictire { width: 240px }
       <div class="tbody" :key="update">
 	<div :key="r.idx" :class="['row', (i + 1) == lastItem ? 'last' : undefined]" v-for="(r, i) in items.slice(0, lastItem)">
 	  <div class="group">
+	    <div class="cell">{{ i + 1 }}</div>
 	    <div class="cell eclass">{{ r.entity_class }}</div>
 	    <div class="cell mapcat">{{ r.map_category }}</div>
 	  </div>
-	  <item :entity_id="r.entity_id"></item>
 	  <div class="group">
 	    <div class="cell label">{{ (r.entity_data || {}).label }}</div>
 	    <div class="cell picture"><img @error="imgError($event, r)" v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture"></div>
@@ -98,11 +98,34 @@ module.exports = {
 	    img.onload  = function() {  }
 	    img.src = src;
 	},
+	imgUrl: function(file, size){
+	    var file_nsp = file.replace(/ /g, '_');
+	    var md5 = SparkMD5.hash(file_nsp);
+	    var url = size ?
+		`https://upload.wikimedia.org/wikipedia/commons/thumb/${md5.substr(0, 1)}/${md5.substr(0, 2)}/${file_nsp}/${size}px-${file_nsp}`
+		:
+		`https://upload.wikimedia.org/wikipedia/commons/${md5.substr(0, 1)}/${md5.substr(0, 2)}/${file_nsp}`
+	    ;
+	    return url
+	},
+	getEntityFromWikidata: function(entity_id, langs, pictureSize){
+	    var c = this;
+	    var url = 'https://www.wikidata.org/wiki/Special:EntityData/' + entity_id + '.json';
+	    
+	    var lang = ['en', 'it', 'de', 'fr', 'es'];
+	    return axios.get(url)
+		.then(d => {
+		    var entity = Object.values(d.data.entities)[0]
+		    var labels = lang.map(l => { return entity.labels[l] }).filter(l => l).map(l => l.value);
+		    var links  = lang.map(l => { return entity.sitelinks[l + 'wiki'] }).filter(l => l).map(l => l.url);
+		    var picture; try { picture = entity.claims.P18[0].mainsnak.datavalue.value } catch(e){};
+		    return Promise.resolve({ label: (labels ||[])[0], link: (links || [])[0], picture: picture ? c.imgUrl(picture, 100) : false });
+		})
+	},
 	loadEntities: function(){
 	    var c = this;
 	    c.items.slice(0, c.lastItem)
 		.forEach((i, k) => {
-		    var tot;
 		    if (!i.entity_data) {
 			axios.get('/entity/' + i.entity_id)
 			    .then(d => {
@@ -114,6 +137,16 @@ module.exports = {
 				}
 			    })
 			    .catch(e => console.log(e))
+			// c.getEntityFromWikidata(i.entity_id)
+			//     .then(d => {
+			// 	i.entity_data = d;
+			// 	if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
+			// 	if (!(k % 10)) {
+			// 	    c.update = Math.random()
+			// 	    Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
+			// 	}
+			//     })
+			//     .catch(e => console.log(e))
 		    }
 		});
 	},
