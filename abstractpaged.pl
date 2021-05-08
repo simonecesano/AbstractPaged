@@ -8,9 +8,20 @@ app->types->type(vue => 'text/plain');
 plugin 'Config';
 plugin Config => { file => 'icons.conf' };
 
-get '/' => sub ($c) {
-  $c->render(template => 'index');
+helper version => sub { state $ver = app->config->{version} || sprintf('%d', time() * rand()) };
+
+helper components => sub {
+    state $components = path('.')->list_tree->grep(sub { /vue$/ });
 };
+
+get '/' => sub ($c) { $c->render(template => 'index') };
+
+get '/version' => sub { my $c = shift; $c->render(text => $c->version) };
+
+get '/app.js' => sub { my $c = shift; $c->render(template => 'app', format => 'js') };
+
+get '/components/index.vue' => sub { my $c = shift; $c->render(template => 'components/index', format => 'vue') };
+
 
 get '/items' => sub {
     my $c = shift;
@@ -28,11 +39,19 @@ get '/entity/:id' => sub {
 	       })
 };
 
+get '/components' => [format => ['json'] ] => sub {
+    my $c = shift;
+    my $components = path('.')->list_tree->grep(sub { /vue$/ })->map(sub { shift() })->grep(sub { ! /base/ })->to_array;
+    return $c->render(json => $components);
+};
+
 get '/components' => sub {
     my $c = shift;
     # ->to_rel('./public')
     # ->map(sub { shift()->stat->mtime })
     my $components = path('.')->list_tree->grep(sub { /vue$/ })->map(sub { shift() })->to_array;
+
+    $c->log->info($c->stash('format'));
     $c->stash('components', $components);
     $c->render(template => 'components');
 };
@@ -85,3 +104,44 @@ __DATA__
   <body><%= content %></body>
   <script type="module" src="/app.js"></script>
 </html>
+@@ app.js.ep
+var app = new Vue({
+    el: '#app',
+    router: (new VueRouter({
+	routes: [
+	        { path: '/', component: httpVueLoader('components/index.vue') },
+		% for my $component (@{app->components->grep(sub { ! /base/ } )->map(sub { s/^public//; $_ })}) {
+		     { path: "<%= $component =~ s/components.//r =~ s/\.vue$//r; %>", component: httpVueLoader("<%= $component %>?version=<%= app->version %>") },
+	         % }
+    		 ],
+    })),
+    data(){
+	return {
+	}
+    },
+});
+@@ components/index.vue.ep
+<style scoped>
+</style>
+<template>
+  <div>
+  <div><h1>Welcome to <%= app->moniker %>!</h1></div>
+  % for my $component (@{app->components->grep(sub { ! /base/ } )->map(sub { s/^public//; $_ })}) {
+  <div><a href="#<%= $component =~ s/components.//r =~ s/\.vue$//r; %>"><%= $component =~ s/components.//r =~ s/\.vue$//r; %></a></div>
+  % }
+  </div>
+</template>
+<script>
+module.exports = {
+    data: function () {
+	return {
+	};
+    },
+    mounted: function(){
+    },
+    destroyed: function(){
+    },
+    methods: {
+    },
+}
+</script>
