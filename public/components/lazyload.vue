@@ -34,12 +34,15 @@ div.tbody { display: table-row-group }
   <div>
     <div class="table">
       <div class="tbody" :key="update">
-	<div :key="r.idx" :data-idx="r.idx" :class="['row', isLastItem(r) ? 'last' : undefined]" v-for="(r, i) in items.slice(firstItem, lastItem)">
+    <div :key="r.idx" :data-idx="r.idx" :data-wdid="r.entity_id"
+	 :class="['row', isLastItem(r) ? 'last' : undefined]" v-for="(r, i) in items.slice(firstItem, lastItem)">
 	  <div class="group">
 	    <div class="cell mapcat">
 	      <icon :key="r.map_category + r.entity_class" :icon="r.map_category.replace(/ /g, '_')" :color="r.entity_class" />
 	    </div>
-	    <div :class="['cell', 'label', r.entity_data && r.entity_data.picture ? undefined : 'nopic']">{{ (r.entity_data || {}).label }}</div>
+	    <div :class="['cell', 'label', r.entity_data && r.entity_data.picture ? undefined : 'nopic']">
+	      <a :href="(r.entity_data || {}).url || '#'">{{ (r.entity_data || {}).label || r.entity_id }}</a>
+	    </div>
 	    <div :class="['cell', 'picture', r.entity_data && r.entity_data.picture ? undefined : 'nopic']">
 	      <img @error="imgError($event, r)" v-if="r.entity_data && r.entity_data.picture" :src="r.entity_data.picture">
 	    </div>
@@ -135,7 +138,7 @@ module.exports = {
 		    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
 	    );
 	},
-	getScrollTops: function(){
+	getScrollTops: function(selector){
 	    var c = this;
 	    var rows = Array.from(document.querySelectorAll('.row'))
 		.map((row, i) => [ i, c.isInViewport(row), row.dataset.idx ])
@@ -148,17 +151,37 @@ module.exports = {
 	    var c = this;
 	    var url = 'https://www.wikidata.org/wiki/Special:EntityData/' + entity_id + '.json';
 	    
-	    var lang = ['en', 'it', 'de', 'fr', 'es'];
+	    var lang = ['en', 'it', 'de', 'fr', 'es', 'pt', 'sv'];
 	    return axios.get(url)
 		.then(d => {
 		    var entity = Object.values(d.data.entities)[0]
 		    var labels = lang.map(l => { return entity.labels[l] }).filter(l => l).map(l => l.value);
 		    var links  = lang.map(l => { return entity.sitelinks[l + 'wiki'] }).filter(l => l).map(l => l.url);
 		    var picture; try { picture = entity.claims.P18[0].mainsnak.datavalue.value } catch(e){};
-		    return Promise.resolve({ label: (labels ||[])[0], link: (links || [])[0], picture: picture ? c.imgUrl(picture, 100) : false });
+		    return Promise.resolve({ label: (labels ||[])[0], url: (links || [])[0], picture: picture ? c.imgUrl(picture, 100) : false });
 		})
 	},
-	loadEntities: function(){
+	loadEntitiesFromWikiPedia: function(){
+	    var c = this;
+	    var l = 0;
+	    
+	    c.items.slice(c.firstItem, c.lastItem)
+		.forEach((i, k) => {
+		    if (!i.entity_data) {
+			c.getEntityFromWikidata(i.entity_id)
+			    .then(d => {
+				i.entity_data = d;
+				if (i.entity_data && i.entity_data.picture) { c.preloadImage(i.entity_data.picture) };
+				if (!(l++ % 32)) {
+				    c.update = Math.random()
+				    Vue.nextTick(function () { c.observer.observe(document.querySelector('.last')) })
+				}
+			    })
+			    .catch(e => console.log(e))
+		    }
+		});
+	},
+	loadEntitiesFromInGiro: function(){
 	    var c = this;
 	    var l = 0;
 	    
@@ -177,6 +200,15 @@ module.exports = {
 			    .catch(e => console.log(e))
 		    }
 		});
+	},
+	loadEntities: function(){
+	    var c = this;
+	    console.log('missing data', c.items.slice(c.firstItem, c.lastItem).filter(i => !i.entity_data).length)
+	    if (this.$route.query.src == 'wp') {
+		this.loadEntitiesFromWikiPedia();
+	    } else {
+		this.loadEntitiesFromInGiro()
+	    }
 	},
 	observerCallback: function(entries, observer){
 	    var c = this;
